@@ -28,6 +28,7 @@ pub fn write_data(key: &str, value: serde_json::Value) {
         eprintln!("Failed to create dirs: {:?}", e);
     }
     let value = bincode::serialize(&serde_json::to_vec(&value).unwrap()).unwrap();
+    println!("{:?}", value);
 
     if let Err(e) = fs::write(storage_dir.join(key), value) {
         eprintln!("Failed to write data {:?}", e);

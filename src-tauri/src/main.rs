@@ -31,14 +31,13 @@ pub struct AppState {
 }
 
 #[tauri::command]
-async fn read_file(file_number: u8, state: tauri::State<'_, AppState>) -> Result<Vec<Vec<String>>, ()> {
+async fn read_file(file_number: u8, delimiter: char, state: tauri::State<'_, AppState>) -> Result<Vec<Vec<String>>, ()> {
     let file_path = FileDialogBuilder::new().pick_file();
-    let delimiter = state.settings.lock().unwrap().delimiter;
 
     if let Some(file_path) = file_path {
         let mut rdr = csv::ReaderBuilder::new()
             .has_headers(false)
-            .delimiter(delimiter)
+            .delimiter(delimiter as u8)
             .from_path(file_path).unwrap();
 
         let mut rows = Vec::new();
@@ -63,7 +62,7 @@ async fn read_file(file_number: u8, state: tauri::State<'_, AppState>) -> Result
         }
     }
 
-    Ok(state.first.lock().unwrap().to_vec())
+    Ok(if file_number == 0 { state.first.lock().unwrap().to_vec() } else { state.second.lock().unwrap().to_vec() })
 }
 
 #[tauri::command]
@@ -71,7 +70,7 @@ async fn connect(first_index: usize, second_index: usize, state: tauri::State<'_
     let first = state.first.lock().unwrap();
     let second = state.second.lock().unwrap();
     let mut result: Vec<Vec<String>> = Vec::new();
-    for row in first.iter() {
+    'outer: for row in first.iter() {
         let first_id = &row[first_index];
         for r in second.iter() {
             let second_id = &r[second_index];
@@ -80,8 +79,12 @@ async fn connect(first_index: usize, second_index: usize, state: tauri::State<'_
                 let mut new2 = row.to_vec();
                 new2.append(&mut new);
                 result.push(new2);
+                continue 'outer
             }
         }
+        let mut first_row = row.to_vec();
+        first_row.resize(first[0].len() + second[0].len(), String::from(""));
+        result.push(first_row);
     }
 
     let mut connect = state.connect.lock().unwrap();
@@ -107,15 +110,14 @@ async fn remove_column(column_index: usize, state: tauri::State<'_, AppState>) -
 }
 
 #[tauri::command]
-async fn save(state: tauri::State<'_, AppState>) -> Result<(), ()> {
+async fn save(delimiter: char, state: tauri::State<'_, AppState>) -> Result<(), ()> {
     let file_path = FileDialogBuilder::new().save_file();
 
     let connect = state.connect.lock().unwrap();
-    let delimiter = state.settings.lock().unwrap().delimiter;
 
     if let Some(file_path) = file_path {
         let mut wtr = csv::WriterBuilder::new()
-            .delimiter(delimiter)
+            .delimiter(delimiter as u8)
             .from_path(file_path).unwrap();
 
         for row in connect.iter() {

@@ -8,7 +8,8 @@
     let rows = []
 
     async function open_file_one() {
-        const result = await invoke('read_file', {fileNumber})
+        const delimiter = localStorage.getItem('delimiter') || ';'
+        const result = await invoke('read_file', {fileNumber, delimiter})
         rows = result
     }
 

@@ -26,7 +26,7 @@
     }
 
     async function save() {
-        await invoke('save')
+        await invoke('save', {delimiter: localStorage.getItem('delimiter') || ';'})
     }
 </script>
 
