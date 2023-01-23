@@ -30,54 +30,62 @@
     }
 </script>
 
-<a href="/settings">Settings</a>
+<div class="container">
+    <div>
+        <a href="/settings">Settings</a>
+    </div>
+    <div>
+        <OpenFileDialog onSelect={handleFirstSelect} fileNumber={0} />
+    </div>
+    <div>
+        <OpenFileDialog onSelect={handleSecondSelect} fileNumber={1} />
+    </div>
+    <div>
+        <button on:click={connectFiles} disabled={firstSelectedFieldIndex === -1 || secondSelectedFieldIndex === -1}>
+            Connect
+        </button>
 
-<br />
+        {#if result.length > 0}
+        <button on:click={removeColumn} disabled={selectedColumnIndex == -1}>
+            Remove Column {selectedColumnIndex != -1 ? result[0][selectedColumnIndex] : ''}
+        </button>
 
-<OpenFileDialog onSelect={handleFirstSelect} fileNumber={0} />
-
-<br />
-
-<OpenFileDialog onSelect={handleSecondSelect} fileNumber={1} />
-
-<br />
-
-<button on:click={connectFiles} disabled={firstSelectedFieldIndex + secondSelectedFieldIndex == -2}>
-    Connect
-</button>
-
-{#if result.length > 0}
-<button on:click={removeColumn} disabled={selectedColumnIndex == -1}>
-    Remove Column {selectedColumnIndex != -1 ? result[0][selectedColumnIndex] : ''}
-</button>
-
-<button on:click={save}>
-    Save
-</button>
-{/if}
-
-<table>
-    {#each result as record, recordIndex}
-        {#if recordIndex === 0}
-            <tr>
-                {#each record as field, fieldIndex}
-                    <td class={fieldIndex === selectedColumnIndex ? 'selected' : ''}>
-                        <button on:click={() => selectedColumnIndex = fieldIndex}>{field}</button>
-                    </td>
-                {/each}
-            </tr>
-        {:else}
-            <tr>
-                {#each record as field, fieldIndex}
-                    <td class={fieldIndex === selectedColumnIndex ? 'selected' : ''}>{field}</td>
-                {/each}
-            </tr>
+        <button on:click={save}>
+            Save
+        </button>
         {/if}
-    {/each}
-</table>
+
+        <table>
+            {#each result as record, recordIndex}
+                {#if recordIndex === 0}
+                    <tr>
+                        {#each record as field, fieldIndex}
+                            <th>
+                                <button on:click={() => selectedColumnIndex = fieldIndex}>{field}</button>
+                            </th>
+                        {/each}
+                    </tr>
+                {:else}
+                    <tr>
+                        {#each record as field}
+                            <td>{field}</td>
+                        {/each}
+                    </tr>
+                {/if}
+            {/each}
+        </table>
+    </div>
+</div>
 
 <style>
-.selected {
-    background-color: blue;
+.container {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 60px 1fr 1fr 1fr;
+    grid-template-columns: 1fr;
+}
+
+.container div {
+    overflow: scroll;
 }
 </style>

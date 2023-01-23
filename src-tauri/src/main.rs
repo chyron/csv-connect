@@ -3,31 +3,14 @@
   windows_subsystem = "windows"
 )]
 
-mod settings;
-
-use tauri::api::{dialog::blocking::FileDialogBuilder, path::local_data_dir};
+use tauri::api::dialog::blocking::FileDialogBuilder;
 use std::sync::Mutex;
-use std::path::Path;
-use std::fs;
-use std::str;
-
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, Copy, Default)]
-pub struct AppSettings {
-    delimiter: u8
-}
-
-impl AppSettings {
-    fn set_delimiter(&mut self) {
-        self.delimiter = b',';
-    }
-}
 
 #[derive(Debug)]
 pub struct AppState {
     first: Mutex<Vec<Vec<String>>>,
     second: Mutex<Vec<Vec<String>>>,
     connect: Mutex<Vec<Vec<String>>>,
-    settings: Mutex<AppSettings>,
 }
 
 #[tauri::command]
@@ -70,19 +53,18 @@ async fn connect(first_index: usize, second_index: usize, state: tauri::State<'_
     let first = state.first.lock().unwrap();
     let second = state.second.lock().unwrap();
     let mut result: Vec<Vec<String>> = Vec::new();
-    'outer: for row in first.iter() {
-        let first_id = &row[first_index];
-        for r in second.iter() {
-            let second_id = &r[second_index];
+    'outer: for row_in_first in first.iter() {
+        let first_id = &row_in_first[first_index];
+        for row_in_second in second.iter() {
+            let second_id = &row_in_second[second_index];
             if first_id == second_id {
-                let mut new = r.to_vec();
-                let mut new2 = row.to_vec();
-                new2.append(&mut new);
-                result.push(new2);
+                let mut connected_row = row_in_first.to_vec();
+                connected_row.append(&mut row_in_second.to_vec());
+                result.push(connected_row);
                 continue 'outer
             }
         }
-        let mut first_row = row.to_vec();
+        let mut first_row = row_in_first.to_vec();
         first_row.resize(first[0].len() + second[0].len(), String::from(""));
         result.push(first_row);
     }
@@ -131,36 +113,13 @@ async fn save(delimiter: char, state: tauri::State<'_, AppState>) -> Result<(), 
 }
 
 fn main() {
-    let storage_dir = Path::new(&local_data_dir().unwrap()).join("csv-connect");
-    let data: String;
-    match fs::read(storage_dir.join("settings")) {
-        Ok(result) => match bincode::deserialize(&result) {
-            Ok(deserialized_bincode) => data = deserialized_bincode,
-            Err(_) => data = str::from_utf8(&result).unwrap().to_string(),
-        },
-        Err(e) => {
-            data = e.to_string();
-        }
-    }
-
-    let serde_value: Result<AppSettings, serde_json::Error> = serde_json::from_str(&data);
-    let settings = match serde_value {
-        Ok(result) => result,
-        Err(_) => {
-            AppSettings {
-                delimiter: b';'
-            }
-        }
-    };
-
   tauri::Builder::default()
     .manage(AppState {
         first: Default::default(),
         second: Default::default(),
         connect: Default::default(),
-        settings: Mutex::new(settings),
     })
-    .invoke_handler(tauri::generate_handler![read_file, connect, remove_column, save, settings::read_data, settings::write_data, settings::get_settings, settings::set_settings])
+    .invoke_handler(tauri::generate_handler![read_file, connect, remove_column, save])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

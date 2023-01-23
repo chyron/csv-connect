@@ -20,19 +20,19 @@
 </script>
 
 ID: {selected != -1 ? rows[0][selected] : ''}
-<button on:click="{open_file_one}">Open File One</button>
+<button on:click="{open_file_one}">Open File</button>
 <table>
     {#each rows as row, rowIndex}
         <tr>
             {#if rowIndex === 0}
                 {#each row as field, fieldIndex}
-                    <td class={fieldIndex == selected ? 'selected' : ''}>
+                    <th>
                         <button on:click={() => handleSelect(fieldIndex)}>{field}</button>
-                    </td>
+                    </th>
                 {/each}
             {:else}
                 {#each row as field, fieldIndex}
-                    <td class={fieldIndex == selected ? 'selected' : ''}>
+                    <td>
                         {field}
                     </td>
                 {/each}
@@ -40,9 +40,3 @@ ID: {selected != -1 ? rows[0][selected] : ''}
         </tr>
     {/each}
 </table>
-
-<style>
-.selected {
-    background-color: blue;
-}
-</style>
